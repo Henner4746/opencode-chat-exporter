@@ -7,8 +7,8 @@
 # Voraussetzung:    sqlite3.exe im PATH (winget install SQLite.SQLite)
 
 # ── Konfiguration ────────────────────────────────────────────────────────────
-$DB_PATH           = "$env:USERPROFILE\.local\share\opencode\opencode.db"
-$OUTPUT_DIR        = "$env:USERPROFILE\Documents\OpenCode_Chats"
+$DB_PATH           = "%USERPROFILE%\.local\share\opencode\opencode.db"
+$OUTPUT_DIR        = "%USERPROFILE%\Documents\OpenCode_Chats"
 $POLL_SEC          = 5
 $SQLITE            = "sqlite3"
 $INCLUDE_REASONING = $false  # $true = reasoning-Blöcke mit exportieren
@@ -39,7 +39,10 @@ function Export-Session($sessionId, $sessionTitle, $sessionCreated) {
     $timeStr  = $dateObj.ToString("HH-mm")
     $safeName = Sanitize-Filename $sessionTitle
     $filename = "${dateStr}_${timeStr}_${safeName}.md"
-    $outPath  = Join-Path $OUTPUT_DIR $filename
+    $expOutputDir = [System.Environment]::ExpandEnvironmentVariables($OUTPUT_DIR)
+    $outPath  = Join-Path $expOutputDir $filename
+
+    $safeSessionId = $sessionId -replace "'", "''"
 
     $query = @"
 SELECT
@@ -49,7 +52,7 @@ SELECT
     p.data         AS part_data
 FROM message m
 LEFT JOIN part p ON p.message_id = m.id
-WHERE m.session_id = '$sessionId'
+WHERE m.session_id = '$safeSessionId'
 ORDER BY m.time_created ASC, p.time_created ASC;
 "@
 
@@ -162,9 +165,10 @@ ORDER BY m.time_created ASC, p.time_created ASC;
 }
 
 function Run-Watcher {
-    if (-not (Test-Path $OUTPUT_DIR)) {
-        New-Item -ItemType Directory -Path $OUTPUT_DIR -Force | Out-Null
-        Write-Log "Output-Ordner erstellt: $OUTPUT_DIR"
+    $expOutputDir = [System.Environment]::ExpandEnvironmentVariables($OUTPUT_DIR)
+    if (-not (Test-Path $expOutputDir)) {
+        New-Item -ItemType Directory -Path $expOutputDir -Force | Out-Null
+        Write-Log "Output-Ordner erstellt: $expOutputDir"
     }
 
     if (-not (Get-Command $SQLITE -ErrorAction SilentlyContinue)) {
@@ -173,7 +177,8 @@ function Run-Watcher {
     }
 
     Write-Log "OpenCode Chat Exporter gestartet"
-    Write-Log "DB:        $DB_PATH"
+    $expDbPath = [System.Environment]::ExpandEnvironmentVariables($DB_PATH)
+    Write-Log "DB:        $expDbPath"
     Write-Log "Output:    $OUTPUT_DIR"
     Write-Log "Poll:      alle $POLL_SEC Sekunden"
     Write-Log "Reasoning: $INCLUDE_REASONING"
@@ -183,19 +188,19 @@ function Run-Watcher {
 
     while ($true) {
         try {
-            if (-not (Test-Path $DB_PATH)) {
+            if (-not (Test-Path $expDbPath)) {
                 Write-Log "DB nicht gefunden, warte..."
                 Start-Sleep -Seconds $POLL_SEC
                 continue
             }
 
-            $dbWrite = (Get-Item $DB_PATH).LastWriteTime
+            $dbWrite = (Get-Item $expDbPath).LastWriteTime
 
             if ($dbWrite -gt $lastDbWrite) {
                 $lastDbWrite = $dbWrite
 
                 $sessionQuery = "SELECT id, title, time_created FROM session WHERE time_archived IS NULL ORDER BY time_updated DESC;"
-                $sessions     = & $SQLITE -separator "`t" $DB_PATH $sessionQuery 2>$null
+                $sessions     = & $SQLITE -separator "`t" $expDbPath $sessionQuery 2>$null
 
                 $exported = 0
                 foreach ($line in $sessions) {

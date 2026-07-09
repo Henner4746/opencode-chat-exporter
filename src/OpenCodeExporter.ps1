@@ -4,8 +4,8 @@ Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$DEFAULT_DB      = "$env:USERPROFILE\.local\share\opencode\opencode.db"
-$DEFAULT_OUTPUT  = "$env:USERPROFILE\Documents\OpenCode_Chats"
+$DEFAULT_DB      = "%USERPROFILE%\.local\share\opencode\opencode.db"
+$DEFAULT_OUTPUT  = "%USERPROFILE%\Documents\OpenCode_Chats"
 $POLL_SEC        = 5
 $TOOL_OUTPUT_MAX = 2000
 $AUTOSTART_NAME  = "OpenCodeExporter"
@@ -243,9 +243,11 @@ function Export-Session($sessionId, $sessionTitle, $sessionCreated, $dbPath, $ou
     $dateObj  = [DateTimeOffset]::FromUnixTimeMilliseconds($sessionCreated).LocalDateTime
     $safeName = Sanitize-Filename $sessionTitle
     $filename = "$($dateObj.ToString('yyyy-MM-dd'))_$($dateObj.ToString('HH-mm'))_${safeName}.md"
-    $outPath  = Join-Path $outputDir $filename
+    $expOutputDir = [System.Environment]::ExpandEnvironmentVariables($outputDir)
+    $outPath  = Join-Path $expOutputDir $filename
 
-    $query = "SELECT m.time_created, json_extract(m.data, '$.role'), p.time_created, p.data FROM message m LEFT JOIN part p ON p.message_id = m.id WHERE m.session_id = '$sessionId' ORDER BY m.time_created ASC, p.time_created ASC;"
+    $safeSessionId = $sessionId -replace "'", "''"
+    $query = "SELECT m.time_created, json_extract(m.data, '$.role'), p.time_created, p.data FROM message m LEFT JOIN part p ON p.message_id = m.id WHERE m.session_id = '$safeSessionId' ORDER BY m.time_created ASC, p.time_created ASC;"
     $rows  = & sqlite3 -separator "|||" $dbPath $query 2>$null
     if (-not $rows) { return $false }
 
@@ -331,8 +333,8 @@ function Export-Session($sessionId, $sessionTitle, $sessionCreated, $dbPath, $ou
 
 # ── Start / Stop ──────────────────────────────────────────────────────────────
 function Start-Watcher {
-    $dbPath    = $TxtDb.Text.Trim()
-    $outputDir = $TxtOutput.Text.Trim()
+    $dbPath    = [System.Environment]::ExpandEnvironmentVariables($TxtDb.Text.Trim())
+    $outputDir = [System.Environment]::ExpandEnvironmentVariables($TxtOutput.Text.Trim())
 
     if (-not (Test-Path $dbPath)) { Add-Log "FEHLER: DB nicht gefunden: $dbPath"; return }
     if (-not (Get-Command sqlite3 -ErrorAction SilentlyContinue)) { Add-Log "FEHLER: sqlite3 nicht gefunden"; return }
@@ -432,7 +434,7 @@ $BtnBrowseOut.Add_Click({
 })
 
 $BtnOpenFolder.Add_Click({
-    $path = $TxtOutput.Text.Trim()
+    $path = [System.Environment]::ExpandEnvironmentVariables($TxtOutput.Text.Trim())
     if (Test-Path $path) { Start-Process explorer.exe $path }
     else { Add-Log "Ordner existiert noch nicht." }
 })
