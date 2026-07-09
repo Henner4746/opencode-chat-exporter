@@ -7,7 +7,9 @@ Automatischer Live-Export deiner [OpenCode](https://opencode.ai) Chat-Sessions a
 
 Kein Token-Verbrauch, keine API-Calls. Das Tool liest direkt aus OpenCodes lokaler SQLite-Datenbank und schreibt jede Session als lesbare `.md`-Datei.
 
-> Tipp: Füge hier gerne einen Screenshot der GUI ein (`docs/screenshot.png`), sobald du das Repo veröffentlichst.
+<p align="center">
+  <img src="docs/screenshot.png" alt="OpenCode Exporter GUI Screenshot" width="600" />
+</p>
 
 ## Warum
 
