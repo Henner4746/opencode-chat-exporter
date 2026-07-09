@@ -1,0 +1,14 @@
+# Build output
+dist/
+*.exe
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
+
+# Local test exports (falls jemand lokal testet)
+test-output/
