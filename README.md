@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/opencode-ai/opencode-ai/main/logo.png" alt="OpenCode.ai Logo" width="150" />
+  <img src="docs/banner.svg" alt="OpenCode Exporter Banner" />
 </p>
 
 # OpenCode Chat Exporter
@@ -48,7 +48,7 @@ Nur zum **Kompilieren** als `.exe` zusätzlich nötig:
 ### Option A — Direkt als Skript ausführen
 
 ```powershell
-git clone https://github.com/<dein-user>/opencode-chat-exporter.git
+git clone https://github.com/Henner4746/opencode-chat-exporter.git
 cd opencode-chat-exporter
 powershell -ExecutionPolicy Bypass -File .\src\OpenCodeExporter.ps1
 ```
